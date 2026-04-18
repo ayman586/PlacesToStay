@@ -5,17 +5,18 @@ const app = express();
 
 app.use(express.json());
 
-// Health check
 app.get("/", (_req, res) => {
   res.send("PlacesToStay API is running 🚀");
 });
 
-// Routes
+/* Routes */
 app.use("/accommodation", accommodationRoutes);
 
-// Start server
-const PORT = 3000;
+/* Debug test route (VERY USEFUL) */
+app.get("/test", (_req, res) => {
+  res.json({ ok: true });
+});
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+app.listen(3000, () => {
+  console.log("Server running on http://localhost:3000");
 });
