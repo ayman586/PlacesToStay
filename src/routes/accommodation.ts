@@ -4,36 +4,32 @@ import { z } from "zod";
 
 const router = Router();
 
-/* =========================================================
-   1. GET ALL ACCOMMODATION BY LOCATION
-========================================================= */
 router.get("/", (req, res) => {
-  const location = req.query.location as string;
+  const location = (req.query.location as string)?.trim();
 
   if (!location) {
     return res.status(400).json({ error: "location is required" });
   }
 
   try {
-    const results = db
-      .prepare(`
-        SELECT * FROM accommodation
-        WHERE LOWER(location) LIKE LOWER(?)
-      `)
-      .all(`%${location}%`);
+    const stmt = db.prepare(`
+      SELECT * FROM accommodation
+      WHERE LOWER(location) LIKE LOWER('%' || ? || '%')
+    `);
 
-    res.json(results);
-  } catch {
-    res.status(500).json({ error: "server error" });
+    const results = stmt.all(location);
+
+    return res.json(results);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "server error" });
   }
 });
 
-/* =========================================================
-   2. GET ACCOMMODATION BY TYPE + LOCATION
-========================================================= */
+
 router.get("/search", (req, res) => {
-  const location = req.query.location as string;
-  const type = req.query.type as string;
+  const location = (req.query.location as string)?.trim();
+  const type = (req.query.type as string)?.trim();
 
   if (!location || !type) {
     return res.status(400).json({
@@ -42,23 +38,22 @@ router.get("/search", (req, res) => {
   }
 
   try {
-    const results = db
-      .prepare(`
-        SELECT * FROM accommodation
-        WHERE LOWER(location) LIKE LOWER(?)
-        AND LOWER(type) = LOWER(?)
-      `)
-      .all(`%${location}%`, type);
+    const stmt = db.prepare(`
+      SELECT * FROM accommodation
+      WHERE LOWER(location) LIKE LOWER('%' || ? || '%')
+      AND LOWER(type) = LOWER(?)
+    `);
 
-    res.json(results);
-  } catch {
-    res.status(500).json({ error: "server error" });
+    const results = stmt.all(location, type);
+
+    return res.json(results);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "server error" });
   }
 });
 
-/* =========================================================
-   3. BOOK ACCOMMODATION (FIXED VERSION)
-========================================================= */
+
 router.post("/book", (req, res) => {
   const schema = z.object({
     accID: z.number(),
@@ -80,15 +75,11 @@ router.post("/book", (req, res) => {
   }
 
   try {
-    // 🔍 DEBUG (you can remove later)
-    console.log("Looking for:", accID, thedate);
 
     const check = db.prepare(`
       SELECT availability FROM acc_dates
-      WHERE accID = ? AND CAST(thedate AS INTEGER) = ?
+      WHERE accID = ? AND thedate = ?
     `).get(accID, thedate);
-
-    console.log("DB result:", check);
 
     if (!check) {
       return res.status(404).json({
@@ -96,24 +87,24 @@ router.post("/book", (req, res) => {
       });
     }
 
-    // Insert booking
+  
     db.prepare(`
       INSERT INTO acc_bookings (accID, thedate, userID, npeople)
       VALUES (?, ?, ?, ?)
     `).run(accID, thedate, 1, npeople);
 
-    // Update availability
+  
     db.prepare(`
       UPDATE acc_dates
       SET availability = availability - ?
-      WHERE accID = ? AND CAST(thedate AS INTEGER) = ?
+      WHERE accID = ? AND thedate = ?
     `).run(npeople, accID, thedate);
 
-    res.json({ message: "booking successful" });
+    return res.json({ message: "booking successful" });
 
   } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: "booking failed" });
+    console.error(err);
+    return res.status(500).json({ error: "booking failed" });
   }
 });
 
