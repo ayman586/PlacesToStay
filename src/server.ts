@@ -10,6 +10,8 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
+app.use(express.static("public"));
+
 app.use("/accommodation", accommodationRoutes);
 app.use("/book", bookingRoutes);
 
