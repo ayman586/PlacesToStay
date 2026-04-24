@@ -7,21 +7,28 @@ router.post("/", (req, res) => {
 
     const { accID, thedate, npeople, apiID } = req.body;
 
-    if (apiID !== "0x574144") {
-        return res.status(403).json({ error: "Invalid API ID" });
-    }
-
     if (!accID || !thedate || !npeople) {
-        return res.status(400).json({ error: "Missing booking data" });
+        return res.status(400).json({
+            error: "Missing booking data"
+        });
     }
 
+    if (apiID !== "0x574144") {
+        return res.status(403).json({
+            error: "Invalid API ID"
+        });
+    }
     const insertBooking = `
         INSERT INTO acc_bookings (accID, thedate, userID, npeople)
         VALUES (?, ?, 1, ?)
     `;
 
     db.run(insertBooking, [accID, thedate, npeople], function (err) {
-        if (err) return res.status(500).json(err);
+        if (err) {
+            return res.status(500).json({
+                error: "Database error (booking insert failed)"
+            });
+        }
 
         const updateAvailability = `
             UPDATE acc_dates
@@ -30,9 +37,15 @@ router.post("/", (req, res) => {
         `;
 
         db.run(updateAvailability, [npeople, accID, thedate], function (err2) {
-            if (err2) return res.status(500).json(err2);
+            if (err2) {
+                return res.status(500).json({
+                    error: "Database error (availability update failed)"
+                });
+            }
 
-            res.json({ message: "Booking successful" });
+            res.json({
+                message: "Booking successful"
+            });
         });
     });
 });
