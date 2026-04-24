@@ -18,36 +18,24 @@ router.post("/", (req, res) => {
             error: "Invalid API ID"
         });
     }
-    const insertBooking = `
+    try{
+          const insertBooking = `
         INSERT INTO acc_bookings (accID, thedate, userID, npeople)
         VALUES (?, ?, 1, ?)
+
     `;
 
-    db.run(insertBooking, [accID, thedate, npeople], function (err) {
-        if (err) {
-            return res.status(500).json({
-                error: "Database error (booking insert failed)"
-            });
-        }
-
-        const updateAvailability = `
-            UPDATE acc_dates
-            SET availability = availability - ?
-            WHERE accID = ? AND thedate = ?
-        `;
-
-        db.run(updateAvailability, [npeople, accID, thedate], function (err2) {
-            if (err2) {
-                return res.status(500).json({
-                    error: "Database error (availability update failed)"
-                });
-            }
-
-            res.json({
-                message: "Booking successful"
-            });
+    db.prepare(insertBooking).run(accID, thedate, npeople);
+      return res.json({
+            message: "Booking successful"
         });
-    });
+
+    } catch (err) {
+        return res.status(500).json({
+            error: "Database error",
+            details: err
+        });
+    }
 });
 
 export default router;
