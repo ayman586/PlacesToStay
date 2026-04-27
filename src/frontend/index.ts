@@ -4,6 +4,9 @@ const searchBtn = document.getElementById("searchBtn") as HTMLButtonElement;
 const locationInput = document.getElementById("location") as HTMLInputElement;
 const resultsDiv = document.getElementById("results") as HTMLDivElement;
 
+const loginBtn = document.getElementById("loginBtn") as HTMLButtonElement;
+const userInfo = document.getElementById("userInfo") as HTMLDivElement;
+
 const map = L.map("map").setView([51.505, -0.09], 5);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -11,6 +14,26 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 let markers: L.Marker[] = [];
+
+loginBtn.addEventListener("click", async () => {
+
+    const username = (document.getElementById("username") as HTMLInputElement).value;
+    const password = (document.getElementById("password") as HTMLInputElement).value;
+
+    const res = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        alert(data.error);
+    } else {
+        loadUser();
+    }
+});
 
 searchBtn.addEventListener("click", async () => {
 
@@ -78,3 +101,16 @@ searchBtn.addEventListener("click", async () => {
         resultsDiv.innerHTML = "Error loading data";
     }
 });
+
+async function loadUser() {
+    const res = await fetch("/auth/me");
+    const data = await res.json();
+
+    if (data.loggedIn) {
+        userInfo.innerHTML = `Logged in as ${data.user}`;
+    } else {
+        userInfo.innerHTML = "";
+    }
+}
+
+loadUser();

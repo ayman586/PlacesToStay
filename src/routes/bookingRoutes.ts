@@ -12,6 +12,11 @@ router.post("/", (req, res) => {
             error: "Missing booking data"
         });
     }
+     if (!req.session.user) {
+        return res.status(401).json({
+            error: "You must be logged in to book"
+        });
+    }
 
     if (apiID !== "0x574144") {
         return res.status(403).json({
